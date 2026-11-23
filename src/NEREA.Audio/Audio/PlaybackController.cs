@@ -66,7 +66,7 @@ public sealed class PlaybackController : IDisposable
 
     public int QueueIndex => _position;
 
-    // ── Queue management ─────────────────────────────────────────────────────
+    // ── Queue management ─────────────────────────────────────────────────
 
     public void PlayTracks(IEnumerable<Track> tracks, int startIndex)
     {
@@ -154,6 +154,16 @@ public sealed class PlaybackController : IDisposable
         else if (Current is not null) _player.Play();
         else if (_queue.Count > 0) PlayCurrent();
         PlayingChanged?.Invoke(this, _player.IsPlaying);
+    }
+
+    /// <summary>Pauses playback; safe to call when already paused or stopped.</summary>
+    public void Pause()
+    {
+        if (_player.IsPlaying)
+        {
+            _player.Pause();
+            PlayingChanged?.Invoke(this, _player.IsPlaying);
+        }
     }
 
     public void Next()
@@ -278,7 +288,7 @@ public sealed class PlaybackController : IDisposable
 
     private void OnTrackEnded(object? sender, EventArgs e) => NextAuto();
 
-    // ── Volume passthrough ───────────────────────────────────────────────────
+    // ── Volume passthrough ───────────────────────────────────────────────
 
     public void SetVolume(float v) => _player.SetVolume(v);
     public void SetMuted(bool muted) => _player.SetMuted(muted);

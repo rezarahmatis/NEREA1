@@ -59,8 +59,8 @@ public sealed class NereaEngine : IDisposable
     private int _deviceLostRetries;
     private bool _firstFrameRaised;
 
-    // Kept for device-lost re-initialization.
-    private ISwapChainPanelNative? _panelNative;
+    // Kept for device-lost re-initialization. IUnknown pointer of the SwapChainPanel.
+    private IntPtr _panelNative;
     private Action<Action>? _marshalToUi;
 
     public event EventHandler? FirstFramePresented;
@@ -73,10 +73,10 @@ public sealed class NereaEngine : IDisposable
     public int FishCount { get; private set; }
     public string CurrentWorldName => _world.World.Name;
 
-    // ── Lifecycle ────────────────────────────────────────────────────────────
+    // ── Lifecycle ────────────────────────────────────────────────────────
 
     /// <summary>Starts the engine. Called from the UI thread.</summary>
-    public void Start(ISwapChainPanelNative panelNative, Action<Action> marshalToUi, EngineConfig config, int width, int height)
+    public void Start(IntPtr panelNative, Action<Action> marshalToUi, EngineConfig config, int width, int height)
     {
         _panelNative = panelNative;
         _marshalToUi = marshalToUi;
@@ -121,12 +121,12 @@ public sealed class NereaEngine : IDisposable
         }
 
         // Bind the composition swap chain to the panel on the UI thread.
-        var swapChainObject = _targets.SwapChain!;
+        var swapChainPointer = _targets.SwapChain!.NativePointer;
         _marshalToUi?.Invoke(() =>
         {
             try
             {
-                _panelNative?.SetSwapChain(swapChainObject);
+                SwapChainPanelNative.SetSwapChain(_panelNative, swapChainPointer);
             }
             catch (Exception ex)
             {
@@ -270,7 +270,7 @@ public sealed class NereaEngine : IDisposable
         return new Vector2(hit.X, hit.Z);
     }
 
-    // ── Render loop ──────────────────────────────────────────────────────────
+    // ── Render loop ──────────────────────────────────────────────────────
 
     private unsafe void RenderLoop()
     {

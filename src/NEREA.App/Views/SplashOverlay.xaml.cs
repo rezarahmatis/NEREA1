@@ -23,7 +23,7 @@ public sealed partial class SplashOverlay : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _vm = DataContext as MainViewModel ?? (Application.Current as App)?.Services
+        _vm = DataContext as MainViewModel ?? App.Services
             .GetService(typeof(MainViewModel)) as MainViewModel;
         if (_vm is not null)
         {

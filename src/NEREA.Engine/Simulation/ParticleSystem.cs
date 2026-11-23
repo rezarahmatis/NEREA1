@@ -28,7 +28,6 @@ public sealed class ParticleSystem
     private Bubble[] _bubbles = new Bubble[256];
     private int _bubbleCount;
     private int _moteTarget;
-    private float _moteScale = 1f;
 
     private float _boundsRadius = 26f;
     private float _depth = 12f;

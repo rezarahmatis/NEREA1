@@ -26,10 +26,10 @@ public sealed partial class LibraryPanel : UserControl
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         _vm = DataContext as LibraryViewModel;
-        _host = (Application.Current as App)?.Services.GetService(typeof(MainWindow)) as MainWindow;
+        _host = App.Services.GetService(typeof(MainWindow)) as MainWindow;
     }
 
-    // ── Navigation ───────────────────────────────────────────────────────────
+    // ── Navigation ───────────────────────────────────────────────────────
 
     private void Tabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -193,7 +193,7 @@ public sealed partial class LibraryPanel : UserControl
         return item;
     }
 
-    // ── Dialogs ──────────────────────────────────────────────────────────────
+    // ── Dialogs ──────────────────────────────────────────────────────────
 
     private async void NewPlaylist_Click(object sender, RoutedEventArgs e)
     {
@@ -224,7 +224,7 @@ public sealed partial class LibraryPanel : UserControl
         return result == ContentDialogResult.Primary ? box.Text.Trim() : null;
     }
 
-    // ── Import ───────────────────────────────────────────────────────────────
+    // ── Import ────────────────────────────────────────────────────────────
 
     private void AddFiles_Click(object sender, RoutedEventArgs e) => _ = (_host?.PickFilesAsync());
 

@@ -31,11 +31,11 @@ public sealed partial class AquariumPanel : UserControl
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        if ((Application.Current as App)?.Services.GetService(typeof(MainViewModel)) is MainViewModel main)
+        if (App.Services.GetService(typeof(MainViewModel)) is MainViewModel main)
             main.ClosePanelsPublic();
     }
 
-    // ── Presets ───────────────────────────────────────────────────────────────
+    // ── Presets ──────────────────────────────────────────────────────────
 
     private async void SavePreset_Click(object sender, RoutedEventArgs e)
     {
@@ -71,7 +71,7 @@ public sealed partial class AquariumPanel : UserControl
         e.Handled = true;
     }
 
-    // ── Worlds ────────────────────────────────────────────────────────────────
+    // ── Worlds ──────────────────────────────────────────────────────────
 
     private void Category_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -92,7 +92,7 @@ public sealed partial class AquariumPanel : UserControl
             _vm.SelectWorld(world);
     }
 
-    // ── Population ────────────────────────────────────────────────────────────
+    // ── Population ──────────────────────────────────────────────────────
 
     private static SpeciesRow? RowFrom(object sender) =>
         ((sender as FrameworkElement)?.DataContext as FrameworkElement)?.DataContext as SpeciesRow
@@ -120,7 +120,7 @@ public sealed partial class AquariumPanel : UserControl
             _vm.AddSpecies(def.Id);
     }
 
-    // ── Atmosphere ────────────────────────────────────────────────────────────
+    // ── Atmosphere ──────────────────────────────────────────────────────
 
     private void Atmosphere_Click(object sender, RoutedEventArgs e)
     {
@@ -144,7 +144,7 @@ public sealed partial class AquariumPanel : UserControl
             : new Microsoft.UI.Xaml.Media.SolidColorBrush(
                 Microsoft.UI.ColorHelper.FromArgb(255, 0x26, 0xFF, 0xFF));
 
-    // ── Dialogs / helpers ─────────────────────────────────────────────────────
+    // ── Dialogs / helpers ──────────────────────────────────────────────────
 
     private async Task<string?> PromptAsync(string title, string placeholder)
     {
