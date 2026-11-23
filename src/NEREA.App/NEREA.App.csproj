@@ -39,6 +39,7 @@
   <!-- Repository root (this csproj lives at src\NEREA.App\). -->
   <PropertyGroup>
     <NEREARepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\'))</NEREARepoRoot>
+    <NEREALogsDir>$(NEREARepoRoot)logs</NEREALogsDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -67,19 +68,38 @@
        cannot start fails the build instead of reaching the user. All logic
        lives in .github/scripts/*.ps1 because inline pwsh -Command payloads
        get their outer quotes stripped by cmd.exe (MSBuild Exec runs through
-       cmd.exe /c "..."), turning the one-liners into parse errors. -->
+       cmd.exe /c "..."), turning the one-liners into parse errors.
+       OnError runs NEREAPrintStartupDiagnostics as a FRESH pwsh process
+       (new pipe pair, app already killed) whose output reliably reaches the
+       CI log - the failing script's own late output was swallowed in runs
+       26/27. -->
   <Target Name="NEREAVerifyRuntimeFiles" AfterTargets="Publish" Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <PropertyGroup>
       <NEREAPublishExe>$([System.IO.Path]::Combine('$(PublishDir)', 'NEREA.exe'))</NEREAPublishExe>
     </PropertyGroup>
     <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\verify-publish-output.ps1&quot; -PublishExe &quot;$(NEREAPublishExe)&quot;" />
+    <OnError ExecuteTargets="NEREAPrintStartupDiagnostics" />
   </Target>
 
   <!-- Launch the published exe on the CI runner. If NEREA cannot start, this
-       fails the build with crash-log/event-log annotations instead of
-       shipping a broken installer/zip to the user. -->
+       fails the build with a distinct exit code (10 exited / 20 fatal
+       diagnostics / 30 no startup marker) instead of shipping a broken
+       installer/zip to the user. The verdict + crash-log tail are written to
+       $(NEREALogsDir)\nerea-smoke-result.txt (files cannot lose bytes like a
+       corrupted console pipe can) and re-printed by the OnError target. -->
   <Target Name="NEREASmokeTestPublishedApp" AfterTargets="NEREAVerifyRuntimeFiles" Condition="'$(GITHUB_ACTIONS)' == 'true'">
-    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\smoke-test-app.ps1&quot; -ExePath &quot;$(NEREAPublishExe)&quot; -WaitSeconds 15" />
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\smoke-test-app.ps1&quot; -ExePath &quot;$(NEREAPublishExe)&quot; -WaitSeconds 15 -DiagDir &quot;$(NEREALogsDir)&quot;" />
+    <OnError ExecuteTargets="NEREAPrintStartupDiagnostics" />
+  </Target>
+
+  <!-- Failure diagnostics. Invoked ONLY through <OnError> above, after the
+       failing script exited and the app process was killed: a fresh pwsh
+       with fresh console handles re-prints the verdict file and the crash
+       log, emits ::notice:: annotations and compiler-style NEREA0001 lines
+       (the runner parses those into check-run annotations too). It exits 0
+       so diagnosis never masks the original failure. -->
+  <Target Name="NEREAPrintStartupDiagnostics">
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\diagnose-startup-failure.ps1&quot; -DiagDir &quot;$(NEREALogsDir)&quot;" />
   </Target>
 
 </Project>
