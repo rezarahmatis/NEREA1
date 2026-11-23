@@ -43,7 +43,8 @@
     <!-- 1.8.260921001: fixes the 2026 XamlCompiler MSB3073 failure class
          (microsoft-ui-xaml#11183, fix merged 2026-08-08). -->
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
+    <!-- 10.0.26100.4654: minimum required by WindowsAppSDK 1.8 (fixes NU1605 downgrade error). -->
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
   </ItemGroup>
