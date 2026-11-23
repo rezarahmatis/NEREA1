@@ -5,6 +5,28 @@ param(
     [int]$WaitSeconds = 15
 )
 
+function Sanitize-AnnotationLine {
+    param([string]$Line)
+    $flat = $Line.Replace('%', '%25').Replace("`r", '').Replace("`n", '')
+    $flat = $flat.Replace(':', '%3A').Replace(',', '%2C')
+    if ($flat.Length -gt 400) { $flat = $flat.Substring(0, 400) }
+    return $flat
+}
+
+function Write-Notice {
+    param([string]$Message)
+    Write-Host ("::notice::smoke-test: " + (Sanitize-AnnotationLine -Line $Message))
+}
+
+function Emit-TextAsAnnotations {
+    param([string]$Text, [int]$MaxLines = 10, [string]$Level = 'error')
+    $lines = @($Text -split "`n" | Where-Object { $_.Trim().Length -gt 0 })
+    $count = [Math]::Min($MaxLines, $lines.Count)
+    for ($i = 0; $i -lt $count; $i++) {
+        Write-Host ("::${Level}::" + (Sanitize-AnnotationLine -Line $lines[$i]))
+    }
+}
+
 function Show-Diagnostics {
     $logPath = Join-Path $env:LOCALAPPDATA 'NEREA\logs\nerea-crash.log'
     if (Test-Path $logPath) {
@@ -26,25 +48,8 @@ function Show-Diagnostics {
     }
 }
 
-function Sanitize-AnnotationLine {
-    param([string]$Line)
-    $flat = $Line.Replace('%', '%25').Replace("`r", '').Replace("`n", '')
-    $flat = $flat.Replace(':', '%3A').Replace(',', '%2C')
-    if ($flat.Length -gt 400) { $flat = $flat.Substring(0, 400) }
-    return $flat
-}
-
-function Emit-TextAsAnnotations {
-    param([string]$Text, [int]$MaxLines = 10)
-    $lines = @($Text -split "`n" | Where-Object { $_.Trim().Length -gt 0 })
-    $count = [Math]::Min($MaxLines, $lines.Count)
-    for ($i = 0; $i -lt $count; $i++) {
-        Write-Host ("::error::" + (Sanitize-AnnotationLine -Line $lines[$i]))
-    }
-}
-
 try {
-    Write-Host "::notice::smoke-test: starting for $ExePath"
+    Write-Notice "starting for $ExePath"
     if (-not (Test-Path $ExePath)) {
         Write-Host "::error::smoke-test: executable not found: $ExePath"
         exit 1
@@ -54,10 +59,20 @@ try {
     $sizeBefore = 0
     if (Test-Path $logPath) { $sizeBefore = (Get-Item $logPath).Length }
 
-    Write-Host "::notice::smoke-test: launching app%2C waiting $WaitSeconds seconds (log size before: $sizeBefore)"
-    $proc = Start-Process -FilePath $ExePath -PassThru
+    # The app must NOT inherit this script's stdout/stderr: MSBuild Exec
+    # captures our output through a pipe, and a process that outlives the
+    # script (or writes to / closes the inherited handles) corrupts the CI
+    # log stream and breaks every later annotation. Redirect the app's
+    # output to files instead - this also captures what the app prints.
+    $outFile = Join-Path $env:TEMP 'nerea-smoke-stdout.txt'
+    $errFile = Join-Path $env:TEMP 'nerea-smoke-stderr.txt'
+    Remove-Item $outFile -Force -ErrorAction SilentlyContinue
+    Remove-Item $errFile -Force -ErrorAction SilentlyContinue
+
+    Write-Notice "launching app%2C waiting $WaitSeconds seconds (log size before: $sizeBefore)"
+    $proc = Start-Process -FilePath $ExePath -PassThru -RedirectStandardOutput $outFile -RedirectStandardError $errFile
     Start-Sleep -Seconds $WaitSeconds
-    Write-Host "::notice::smoke-test: wait finished%2C HasExited=$($proc.HasExited)"
+    Write-Notice "wait finished%2C HasExited=$($proc.HasExited)"
 
     if ($proc.HasExited) {
         Write-Host "::error::smoke-test: NEREA exited during startup (exit code: $($proc.ExitCode))"
@@ -65,14 +80,12 @@ try {
         exit 1
     }
 
-    # The process is alive, but NEREA may still have failed internally and be
-    # sitting on the last-resort fatal dialog (MessageBoxW blocks the process).
-    # Detect that case through the crash log it writes before showing the dialog.
     $crashContent = ''
     if (Test-Path $logPath) {
         $raw = Get-Content $logPath -Raw
-        if ($raw.Length -gt $sizeBefore) { $crashContent = $raw.Substring($sizeBefore) }
+        if ($raw -and $raw.Length -gt $sizeBefore) { $crashContent = $raw.Substring($sizeBefore) }
     }
+    Write-Notice "log captured%2C new bytes=$($crashContent.Length)"
 
     if ($crashContent -match '\[Main\]|\[OnLaunched\]|could not start|AppDomain\.UnhandledException|DllNotFoundException') {
         Write-Host "::error::smoke-test: NEREA is alive but logged a fatal startup error"
@@ -82,7 +95,22 @@ try {
         exit 1
     }
 
-    Write-Host "::notice::smoke-test: no fatal diagnostics%2C stopping process"
+    # Surface whatever the app printed (may be empty) for diagnosis.
+    foreach ($capture in @(@('stdout', $outFile), @('stderr', $errFile))) {
+        $label = $capture[0]
+        $file = $capture[1]
+        if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            if ($content) {
+                $tail = $content
+                if ($tail.Length -gt 800) { $tail = $tail.Substring($tail.Length - 800) }
+                Write-Host "=== app $label ($file) ==="
+                Write-Host $tail
+                Emit-TextAsAnnotations -Text $tail -MaxLines 5 -Level 'notice'
+            }
+        }
+    }
+
     Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
     Write-Host "SMOKE TEST PASSED: NEREA.exe ran for $WaitSeconds seconds without fatal diagnostics."
     exit 0
