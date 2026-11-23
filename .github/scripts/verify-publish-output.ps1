@@ -1,16 +1,16 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [string]$PublishDir
+    [string]$PublishExe
 )
 
 try {
-    Write-Host "::notice::verify-publish-output: start ($PublishDir)"
-    $exe = Join-Path $PublishDir 'NEREA.exe'
-    if (-not (Test-Path $exe)) {
-        Write-Host "::error::verify-publish-output: NEREA.exe missing: $exe"
+    Write-Host "::notice::verify-publish-output: start ($PublishExe)"
+    if (-not (Test-Path $PublishExe)) {
+        Write-Host "::error::verify-publish-output: NEREA.exe missing: $PublishExe"
         exit 1
     }
+    $PublishDir = Split-Path -Parent $PublishExe
 
     # Files that must sit next to NEREA.exe or the process dies before any
     # managed diagnostics can run (the silent "installed but won't run").
