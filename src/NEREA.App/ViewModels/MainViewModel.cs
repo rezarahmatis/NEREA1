@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NEREA.App.Services;
 using NEREA.Audio;
 using NEREA.Core.Data;
 using NEREA.Core.Models;

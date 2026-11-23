@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using NEREA.App.Services;
 using NEREA.App.ViewModels;
+using NEREA.Audio;
 using NEREA.Core.Data;
 using NEREA.Core.Services;
 using Windows.Storage;
