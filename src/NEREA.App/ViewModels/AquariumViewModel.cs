@@ -1,9 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NEREA.App.Services;
 using NEREA.Core.Content;
 using NEREA.Core.Data;
 using NEREA.Core.Models;
 using NEREA.Core.Services;
+using System.Collections.ObjectModel;
 
 namespace NEREA.App.ViewModels;
 

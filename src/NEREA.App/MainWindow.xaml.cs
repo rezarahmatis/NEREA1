@@ -1,5 +1,6 @@
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -8,6 +9,8 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using NEREA.App.Services;
 using NEREA.App.ViewModels;
+using NEREA.Core.Data;
+using NEREA.Core.Services;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.Storage.Pickers;

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using NEREA.Core.Data;
 using NEREA.Core.Models;
 using NEREA.Core.Services;
+using System.Collections.ObjectModel;
 
 namespace NEREA.App.ViewModels;
 
@@ -336,4 +337,3 @@ public partial class LibraryViewModel : ObservableObject
         }
     }
 }
-
