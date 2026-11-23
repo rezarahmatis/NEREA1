@@ -1,0 +1,23 @@
+<UserControl
+    x:Class="NEREA.App.Views.SplashOverlay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsHitTestVisible="False">
+
+    <Grid x:Name="Root" Background="#0A1420">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="18">
+            <Grid Width="64" Height="64" HorizontalAlignment="Center">
+                <Path Fill="#E8EFF2" Stretch="Uniform" Opacity="0.95"
+                      Data="M 50,37.11 C 46.6,43.6 42.77,48.4 42.77,53.22 A 7.23,7.23 0 1 0 57.23,53.22 C 57.23,48.4 53.4,43.6 50,37.11 Z" />
+                <Path Stroke="#E8EFF2" StrokeThickness="2.2" Stretch="Uniform" Opacity="0.7"
+                      Data="M 36.72,60.10 A 14.65,14.65 0 1 1 63.28,60.10" />
+                <Path Stroke="#E8EFF2" StrokeThickness="1.6" Stretch="Uniform" Opacity="0.4"
+                      Data="M 29.47,63.48 A 22.66,22.66 0 1 1 70.53,63.48" />
+            </Grid>
+            <TextBlock Text="NEREA"
+                       FontFamily="Georgia" FontSize="24"
+                       Foreground="#E8EFF2" CharacterSpacing="220"
+                       HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

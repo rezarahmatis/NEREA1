@@ -1,0 +1,93 @@
+<UserControl
+    x:Class="NEREA.App.Views.NowPlayingBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid x:Name="Root" MaxWidth="620" Margin="0,0,0,30">
+        <StackPanel Spacing="0">
+            <TextBlock Text="{Binding NowTitle}"
+                       FontFamily="Segoe UI" FontSize="15" FontWeight="SemiLight"
+                       Foreground="#E8EFF2" CharacterSpacing="25"
+                       TextAlignment="Center" TextTrimming="CharacterEllipsis" Opacity="0.92" />
+            <TextBlock Text="{Binding NowArtist}"
+                       FontFamily="Segoe UI" FontSize="12"
+                       Foreground="#9AAAB2" CharacterSpacing="15"
+                       TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                       Margin="0,2,0,0" Opacity="0.75" />
+
+            <!-- Thin seek line -->
+            <Grid x:Name="SeekArea" Height="16" Margin="24,8,24,0" Background="Transparent"
+                  PointerPressed="SeekArea_PointerPressed"
+                  PointerMoved="SeekArea_PointerMoved"
+                  PointerReleased="SeekArea_PointerReleased">
+                <Rectangle Height="3" VerticalAlignment="Center" Fill="#1F3A4652"
+                           RadiusX="1.5" RadiusY="1.5" />
+                <Rectangle x:Name="SeekFill" Height="3" VerticalAlignment="Center"
+                           Fill="{ThemeResource NereaSeekFillBrush}" RadiusX="1.5" RadiusY="1.5"
+                           HorizontalAlignment="Left" Opacity="0.9" />
+                <Rectangle x:Name="SeekThumb" Width="7" Height="7" RadiusX="3.5" RadiusY="3.5"
+                           Fill="#E8EFF2" HorizontalAlignment="Left" VerticalAlignment="Center"
+                           Opacity="0" />
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Spacing="2"
+                        HorizontalAlignment="Center" Margin="0,8,0,0">
+                <ToggleButton x:Name="ShuffleButton" Style="{ThemeResource NereaGhostToggleButton}"
+                              Click="Shuffle_Click" ToolTipService.ToolTip="Shuffle">
+                    <Path Stroke="#B8C6CC" StrokeThickness="1.5" Stretch="None"
+                          Data="M 3,7 H 7 C 11,7 13,17 17,17 H 21 M 18.5,14.5 L 21,17 L 18.5,19.5 M 3,17 H 7 C 8.6,17 9.9,15.2 11,13.6 M 13,10.4 C 14.1,8.8 15.4,7 17,7 H 21 M 18.5,4.5 L 21,7 L 18.5,9.5" />
+                </ToggleButton>
+                <Button x:Name="PrevButton" Style="{ThemeResource NereaGhostButton}"
+                        Command="{Binding PreviousCommand}" ToolTipService.ToolTip="Previous">
+                    <Path Fill="#E8EFF2" Stretch="None"
+                          Data="M 17.5,5 L 9.5,12 L 17.5,19 Z M 6,5 H 8.4 V 19 H 6 Z" />
+                </Button>
+                <Button x:Name="PlayPauseButton" Style="{ThemeResource NereaGhostButton}"
+                        Command="{Binding PlayPauseCommand}" ToolTipService.ToolTip="Play / pause"
+                        Padding="12">
+                    <Grid Width="22" Height="22">
+                        <Path Fill="#E8EFF2" Stretch="None" Visibility="{Binding IsPlaying, Converter={StaticResource InverseBoolToVis}}"
+                              Data="M 8,4.5 L 20,11 L 8,17.5 Z" />
+                        <Path Fill="#E8EFF2" Stretch="None" Visibility="{Binding IsPlaying, Converter={StaticResource BoolToVis}}"
+                              Data="M 7,4.5 H 10.4 V 17.5 H 7 Z M 13.6,4.5 H 17 V 17.5 H 13.6 Z" />
+                    </Grid>
+                </Button>
+                <Button x:Name="NextButton" Style="{ThemeResource NereaGhostButton}"
+                        Command="{Binding NextCommand}" ToolTipService.ToolTip="Next">
+                    <Path Fill="#E8EFF2" Stretch="None"
+                          Data="M 6.5,5 L 14.5,12 L 6.5,19 Z M 15.6,5 H 18 V 19 H 15.6 Z" />
+                </Button>
+                <ToggleButton x:Name="RepeatButton" Style="{ThemeResource NereaGhostToggleButton}"
+                              Click="Repeat_Click" ToolTipService.ToolTip="Repeat">
+                    <Grid Width="24" Height="24">
+                        <Path Stroke="#B8C6CC" StrokeThickness="1.5" Stretch="None"
+                              Data="M 7,8 H 16 A 2.4,2.4 0 0 1 16,12.8 H 8 M 10.5,5.5 L 8,8 L 10.5,10.5" />
+                        <Path Stroke="#B8C6CC" StrokeThickness="1.5" Stretch="None"
+                              Data="M 17,16 H 8 A 2.4,2.4 0 0 1 8,11.2" Opacity="0" />
+                        <TextBlock x:Name="RepeatOneMark" Text="1" FontSize="9" Foreground="#7FC4C9"
+                                   Margin="0,-6,0,0" HorizontalAlignment="Right" Opacity="0" />
+                    </Grid>
+                </ToggleButton>
+
+                <Border Width="1" Height="18" Background="#2A3A4652" Margin="10,0,10,0" />
+
+                <Button x:Name="MuteButton" Style="{ThemeResource NereaGhostButton}"
+                        Command="{Binding ToggleMuteCommand}" ToolTipService.ToolTip="Mute">
+                    <Grid Width="24" Height="24">
+                        <Path Fill="#E8EFF2" Stretch="None"
+                              Data="M 4,9.5 H 7.5 L 12,5.5 V 18.5 L 7.5,14.5 H 4 Z" />
+                        <Path x:Name="VolumeWaves" Stroke="#E8EFF2" StrokeThickness="1.5" Stretch="None"
+                              Data="M 14.8,9.2 A 3.6,3.6 0 0 1 14.8,14.8 M 17.2,7 A 7,7 0 0 1 17.2,17"
+                              Visibility="{Binding IsMuted, Converter={StaticResource InverseBoolToVis}}" />
+                        <Path x:Name="MuteCross" Stroke="#E8EFF2" StrokeThickness="1.6" Stretch="None"
+                              Data="M 14.6,9.6 L 19.6,14.6 M 19.6,9.6 L 14.6,14.6"
+                              Visibility="{Binding IsMuted, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                </Button>
+                <Slider x:Name="VolumeSlider" Width="110" Minimum="0" Maximum="1" StepFrequency="0.02"
+                        Value="{Binding Volume, Mode=TwoWay}"
+                        VerticalAlignment="Center" Margin="4,0,0,0" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

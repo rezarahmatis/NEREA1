@@ -1,0 +1,93 @@
+<Window
+    x:Class="NEREA.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:NEREA.App.Controls"
+    xmlns:views="using:NEREA.App.Views">
+
+    <Grid x:Name="Root" Background="#000000" AllowDrop="True" CanDrag="False">
+
+        <!-- Living aquatic world -->
+        <SwapChainPanel x:Name="RenderPanel" />
+
+        <!-- Graceful GPU fallback background -->
+        <Rectangle x:Name="FallbackBackground" Fill="{ThemeResource NereaFallbackBrush}" Visibility="Collapsed" />
+
+        <!-- Invisible drag region for the hidden title bar -->
+        <Grid x:Name="TitleBarDrag" Height="46" VerticalAlignment="Top" Background="Transparent" />
+
+        <!-- Permanent quiet branding: upper-left only -->
+        <controls:BrandMark x:Name="Brand" Margin="30,22,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+        <!-- Quiet panel toggles -->
+        <StackPanel x:Name="TopActions" Orientation="Horizontal" Spacing="4"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,20,28,0">
+            <Button x:Name="AquariumButton" Style="{ThemeResource NereaGhostButton}"
+                    Command="{Binding OpenAquariumCommand}" ToolTipService.ToolTip="Aquarium">
+                <Grid Width="20" Height="20">
+                    <Path Fill="#E8EFF2" Stretch="Uniform"
+                          Data="M 50,37.11 C 46.6,43.6 42.77,48.4 42.77,53.22 A 7.23,7.23 0 1 0 57.23,53.22 C 57.23,48.4 53.4,43.6 50,37.11 Z" />
+                    <Path Stroke="#E8EFF2" StrokeThickness="4" Stretch="Uniform" Opacity="0.75"
+                          Data="M 36.72,60.10 A 14.65,14.65 0 1 1 63.28,60.10" />
+                </Grid>
+            </Button>
+            <Button Style="{ThemeResource NereaGhostButton}"
+                    Command="{Binding OpenLibraryCommand}" ToolTipService.ToolTip="Library">
+                <Grid Width="20" Height="20">
+                    <Ellipse Canvas.ZIndex="0" Width="9" Height="9" Fill="#E8EFF2"
+                             HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="2,0,0,1" />
+                    <Path Fill="#E8EFF2" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top"
+                          Data="M 8.6,17 L 8.6,3.5 L 17,2 L 17,6.4 L 10.6,7.6 L 10.6,17 Z" />
+                </Grid>
+            </Button>
+            <Button Style="{ThemeResource NereaGhostButton}"
+                    Command="{Binding OpenSettingsCommand}" ToolTipService.ToolTip="Settings">
+                <Grid Width="20" Height="20">
+                    <Path Stroke="#E8EFF2" StrokeThickness="1.6" Stretch="None"
+                          Data="M 3,5.5 H 17 M 3,10 H 17 M 3,14.5 H 17" />
+                    <Ellipse Width="5" Height="5" Stroke="#E8EFF2" StrokeThickness="1.6" Fill="#10161E"
+                             HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,3,0,0" />
+                    <Ellipse Width="5" Height="5" Stroke="#E8EFF2" StrokeThickness="1.6" Fill="#10161E"
+                             HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12,7.5,0,0" />
+                    <Ellipse Width="5" Height="5" Stroke="#E8EFF2" StrokeThickness="1.6" Fill="#10161E"
+                             HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6,12,0,0" />
+                </Grid>
+            </Button>
+        </StackPanel>
+
+        <!-- Transient world name (fade in, hold, fade out) -->
+        <TextBlock x:Name="WorldToast"
+                   Text="{Binding WorldToast}"
+                   FontFamily="Georgia" FontSize="24" Foreground="#E8EFF2"
+                   CharacterSpacing="140"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-80,0,0"
+                   Opacity="0" IsHitTestVisible="False" />
+
+        <!-- Minimal playback layer -->
+        <views:NowPlayingBar x:Name="PlayBar" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+
+        <!-- Side panels -->
+        <views:LibraryPanel x:Name="LibraryPanelView" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
+        <views:AquariumPanel x:Name="AquariumPanelView" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
+        <views:SettingsPanel x:Name="SettingsPanelView" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
+
+        <!-- Engine degradation notice -->
+        <InfoBar x:Name="DegradeBanner"
+                 IsOpen="{Binding Degraded, Mode=OneWay}"
+                 Severity="Warning"
+                 Title="Reduced experience"
+                 Message="{Binding DegradedReason, Mode=OneWay}"
+                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,60,0,0"
+                 Width="520" />
+
+        <!-- Import / notice banner -->
+        <InfoBar IsOpen="{Binding InfoOpen, Mode=TwoWay}"
+                 Severity="{Binding InfoSeverity, Mode=OneWay}"
+                 Message="{Binding InfoMessage, Mode=OneWay}"
+                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,128,0,0"
+                 Width="520" />
+
+        <!-- Startup: symbol, name, then the world -->
+        <views:SplashOverlay x:Name="Splash" />
+    </Grid>
+</Window>
