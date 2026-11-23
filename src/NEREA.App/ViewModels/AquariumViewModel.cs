@@ -85,7 +85,7 @@ public partial class AquariumViewModel : ObservableObject
 
     partial void OnWorldCategoryFilterChanged(string value) => OnPropertyChanged(nameof(FilteredWorlds));
 
-    // ── World commands ───────────────────────────────────────────────────────
+    // ── World commands ───────────────────────────────────────────────────
 
     [RelayCommand]
     public void SelectWorld(WorldDefinition? world)
@@ -167,7 +167,7 @@ public partial class AquariumViewModel : ObservableObject
         _aquarium.SetAtmosphere((Atmosphere)index);
     }
 
-    // ── Presets ──────────────────────────────────────────────────────────────
+    // ── Presets ──────────────────────────────────────────────────────────
 
     public void SavePreset(string name)
     {
@@ -195,6 +195,10 @@ public partial class AquariumViewModel : ObservableObject
 
 public static class UiSyncExtensions
 {
-    public static void SyncUi(this MainViewModel main, Action action) =>
-        System.Threading.SynchronizationContext.Current?.Post(_ => action(), null) ?? action();
+    public static void SyncUi(this MainViewModel main, Action action)
+    {
+        var context = System.Threading.SynchronizationContext.Current;
+        if (context is not null) context.Post(_ => action(), null);
+        else action();
+    }
 }

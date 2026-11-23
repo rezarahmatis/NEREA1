@@ -108,16 +108,16 @@ public sealed class SystemMediaControlsService : IDisposable
             if (c is null) return;
             if (track is null)
             {
-                c.DisplayProperties.ClearAll();
+                c.DisplayUpdater.ClearAll();
                 c.PlaybackStatus = MediaPlaybackStatus.Stopped;
                 return;
             }
-            var props = c.DisplayProperties;
-            props.Type = MediaPlaybackType.Music;
-            props.MusicProperties.Title = track.Title;
-            props.MusicProperties.Artist = track.DisplayArtist;
-            props.MusicProperties.AlbumTitle = track.DisplayAlbum;
-            props.ApplyDisplayProperties();
+            var updater = c.DisplayUpdater;
+            updater.Type = MediaPlaybackType.Music;
+            updater.MusicProperties.Title = track.Title;
+            updater.MusicProperties.Artist = track.DisplayArtist;
+            updater.MusicProperties.AlbumTitle = track.DisplayAlbum;
+            updater.Update();
         }
         catch
         {
@@ -142,11 +142,13 @@ public sealed class SystemMediaControlsService : IDisposable
         {
             var c = _smtc;
             if (c is null || !_playback.IsPlaying) return;
-            var tl = c.TimelineProperties;
-            tl.Position = _playback.Position;
-            tl.EndTime = _playback.Duration;
-            tl.PlaybackRate = 1.0;
-            c.UpdateTimelineProperties();
+            var timeline = new SystemMediaTransportControlsTimelineProperties
+            {
+                Position = _playback.Position,
+                EndTime = _playback.Duration,
+                PlaybackRate = 1.0
+            };
+            c.UpdateTimelineProperties(timeline);
         }
         catch { }
     }
@@ -166,7 +168,12 @@ public sealed class SystemMediaControlsService : IDisposable
     {
         _playback.TrackChanged -= OnTrackChanged;
         _playback.PlayingChanged -= OnPlayingChanged;
-        try { _smtc?.Dispose(); } catch { }
+        // SystemMediaTransportControls is not disposable; just detach.
+        if (_smtc is not null)
+        {
+            try { _smtc.ButtonPressed -= OnButtonPressed; } catch { }
+            _smtc = null;
+        }
     }
 
     // ── Win32 activation ─────────────────────────────────────────────────────

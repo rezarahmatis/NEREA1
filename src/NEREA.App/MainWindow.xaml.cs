@@ -11,6 +11,7 @@ using NEREA.App.Services;
 using NEREA.App.ViewModels;
 using NEREA.Core.Data;
 using NEREA.Core.Services;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -55,17 +56,17 @@ public sealed partial class MainWindow : Window
         AquariumPanelView.DataContext = _vm.AquariumVm;
         SettingsPanelView.DataContext = _vm.SettingsVm;
         // Panel visibility lives on the shell view model.
-        LibraryPanelView.SetBinding(VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
+        LibraryPanelView.SetBinding(UIElement.VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
         {
             Path = new Microsoft.UI.Xaml.PropertyPath(nameof(MainViewModel.ShowLibrary)),
             Source = _vm
         });
-        AquariumPanelView.SetBinding(VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
+        AquariumPanelView.SetBinding(UIElement.VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
         {
             Path = new Microsoft.UI.Xaml.PropertyPath(nameof(MainViewModel.ShowAquarium)),
             Source = _vm
         });
-        SettingsPanelView.SetBinding(VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
+        SettingsPanelView.SetBinding(UIElement.VisibilityProperty, new Microsoft.UI.Xaml.Data.Binding
         {
             Path = new Microsoft.UI.Xaml.PropertyPath(nameof(MainViewModel.ShowSettings)),
             Source = _vm
@@ -177,8 +178,11 @@ public sealed partial class MainWindow : Window
         UpdateCursorIdle();
 
         if (_vm.AnyPanelOpen) return;
-        if (e.Pointer.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Mouse &&
-            e.Pointer.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Touch) return;
+        // WinUI and the Windows SDK each project a PointerDeviceType with the same
+        // name; compare the underlying value to stay independent of the projection.
+        int pointerType = (int)e.Pointer.PointerDeviceType;
+        if (pointerType != (int)Windows.Devices.Input.PointerDeviceType.Mouse &&
+            pointerType != (int)Windows.Devices.Input.PointerDeviceType.Touch) return;
         _engine.Engine.OnPointerMove(
             (float)(p.X / Math.Max(1, Root.ActualWidth)),
             (float)(p.Y / Math.Max(1, Root.ActualHeight)),
@@ -319,7 +323,7 @@ public sealed partial class MainWindow : Window
             : AppWindowPresenterKind.Overlapped);
     }
 
-    // ── Drag & drop import ───────────────────────────────────────────────────
+    // ── Drag & drop import ───────────────────────────────────────────────
 
     private async void OnDragOver(object sender, DragEventArgs e)
     {
@@ -353,7 +357,7 @@ public sealed partial class MainWindow : Window
         var picker = new FileOpenPicker();
         foreach (var ext in new[] { ".mp3", ".wav", ".flac", ".ogg", ".oga", ".m4a", ".aac", ".wma" })
             picker.FileTypeFilter.Add(ext);
-        InitializeWithWindow.InitializeWithWindow(picker, WindowNative.GetWindowHandle(this));
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
         var files = await picker.PickMultipleFilesAsync();
         if (files.Count > 0)
             await _vm.LibraryVm.ImportAsync(files.Select(f => f.Path));
@@ -363,7 +367,7 @@ public sealed partial class MainWindow : Window
     {
         var picker = new FolderPicker();
         picker.FileTypeFilter.Add("*");
-        InitializeWithWindow.InitializeWithWindow(picker, WindowNative.GetWindowHandle(this));
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
         var folder = await picker.PickSingleFolderAsync();
         if (folder is not null)
             await _vm.LibraryVm.ImportAsync(new[] { folder.Path });
@@ -447,7 +451,7 @@ public sealed partial class MainWindow : Window
         sb.Begin();
     }
 
-    // ── Tray ─────────────────────────────────────────────────────────────────
+    // ── Tray ─────────────────────────────────────────────────────────────
 
     private void ShowFromTray()
     {

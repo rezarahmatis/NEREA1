@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using NEREA.Core.Content;
@@ -6,6 +7,7 @@ using NEREA.Core.Models;
 using NEREA.Core.Services;
 using NEREA.Engine;
 using NEREA.Engine.Interop;
+using WinRT;
 
 namespace NEREA.App.Services;
 
@@ -21,7 +23,7 @@ public sealed class EngineHost : IDisposable
     private readonly IMusicPlayer _player;
 
     private DispatcherQueue? _dispatcher;
-    private ISwapChainPanelNative? _panelNative;
+    private IntPtr _panelAbi;
 
     public bool Degraded { get; private set; }
     public string DegradedReason { get; private set; } = "";
@@ -45,7 +47,16 @@ public sealed class EngineHost : IDisposable
     {
         try
         {
-            _panelNative = panel.As<ISwapChainPanelNative>();
+            // Take a COM reference to the panel's native object; the engine binds
+            // the swap chain through the native ISwapChainPanelNative vtable.
+            var iidUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+            var panelThis = ((IWinRTObject)panel).NativeObject.ThisPtr;
+            if (Marshal.QueryInterface(panelThis, ref iidUnknown, out _panelAbi) != 0 ||
+                _panelAbi == IntPtr.Zero)
+            {
+                SetDegraded("SwapChainPanel interop unavailable: QueryInterface failed.");
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -89,7 +100,7 @@ public sealed class EngineHost : IDisposable
         _engine.Degraded += (_, reason) => _dispatcher?.TryEnqueue(() => SetDegraded(reason));
         _engine.WorldAnnounced += (_, name) => _dispatcher?.TryEnqueue(() => WorldAnnounced?.Invoke(this, name));
         _aquarium.ConfigurationChanged += OnAquariumConfigurationChanged;
-        _engine.Start(_panelNative!, action => _dispatcher?.TryEnqueue(() => action()),
+        _engine.Start(_panelAbi, action => _dispatcher?.TryEnqueue(() => action()),
             config, (int)panel.ActualWidth, (int)panel.ActualHeight);
     }
 
@@ -147,5 +158,13 @@ public sealed class EngineHost : IDisposable
         DegradedChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Dispose() => _engine.Dispose();
+    public void Dispose()
+    {
+        if (_panelAbi != IntPtr.Zero)
+        {
+            Marshal.Release(_panelAbi);
+            _panelAbi = IntPtr.Zero;
+        }
+        _engine.Dispose();
+    }
 }
