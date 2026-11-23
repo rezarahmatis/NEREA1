@@ -29,6 +29,9 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
       - name: Extract version
         id: version
         shell: pwsh
@@ -43,18 +46,19 @@ jobs:
       - name: Restore NuGet packages
         run: dotnet restore src/NEREA.App/NEREA.App.csproj
 
-      - name: Build solution
-        run: dotnet build NEREA.sln -c ${{ env.CONFIGURATION }} -p:Platform=x64 --no-restore
-
+      # MSBuild is used instead of "dotnet build": the WinUI 3 XAML compiler
+      # intermittently fails under the dotnet CLI host with MSB3073 and no
+      # error details (microsoft-ui-xaml#11183), while MSBuild succeeds.
       - name: Publish self-contained x64
-        run: >
-          dotnet publish src/NEREA.App/NEREA.App.csproj
-          -c ${{ env.CONFIGURATION }}
-          -r win-x64
-          --self-contained true
-          -p:Platform=x64
-          -p:PublishDir=${{ github.workspace }}\publish\
-          --no-build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}\logs" | Out-Null
+          msbuild src\NEREA.App\NEREA.App.csproj /t:Publish /m /nologo /verbosity:minimal `
+            /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=x64 `
+            /p:RuntimeIdentifier=win-x64 /p:SelfContained=true /p:WindowsAppSDKSelfContained=true `
+            /p:PublishDir="${{ github.workspace }}\publish\" `
+            /bl:"${{ github.workspace }}\logs\publish.binlog"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify publish output
         shell: pwsh
@@ -62,6 +66,29 @@ jobs:
           if (-not (Test-Path "${{ github.workspace }}\publish\NEREA.exe")) {
             Write-Error "NEREA.exe missing from publish output"
           }
+
+      # The WinUI XAML compiler hides real errors behind MSB3073; the actual
+      # messages live in output.json inside obj. Print them in the log and
+      # upload everything (incl. the MSBuild binary log) for offline viewing.
+      - name: Dump XAML compiler diagnostics
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path src -Recurse -Filter output.json -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "=== $($_.FullName) ==="
+              Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
+            }
+
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-diagnostics
+          if-no-files-found: ignore
+          path: |
+            logs/
+            **/obj/**/*.json
 
       - name: Package portable ZIP
         shell: pwsh
