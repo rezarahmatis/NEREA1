@@ -38,6 +38,13 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+; Capture native crash dumps (loader failures, missing DLLs, D3D faults) so
+; startup problems that happen below the managed layer stay diagnosable.
+[Registry]
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\NEREA.exe"; ValueType: expandsz; ValueName: "DumpFolder"; ValueData: "{localappdata}\NEREA\dumps"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\NEREA.exe"; ValueType: dword; ValueName: "DumpType"; ValueData: "1"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\NEREA.exe"; ValueType: dword; ValueName: "DumpCount"; ValueData: "3"
+
 [Icons]
 Name: "{group}\NEREA"; Filename: "{app}\NEREA.exe"
 Name: "{autodesktop}\NEREA"; Filename: "{app}\NEREA.exe"; Tasks: desktopicon
@@ -46,8 +53,9 @@ Name: "{autodesktop}\NEREA"; Filename: "{app}\NEREA.exe"; Tasks: desktopicon
 Filename: "{app}\NEREA.exe"; Description: "Launch NEREA"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-; Application logs only - the music library and aquariums are kept for reinstall.
+; Application logs and crash dumps only - the music library and aquariums are kept for reinstall.
 Type: filesandordirs; Name: "{localappdata}\NEREA\logs"
+Type: filesandordirs; Name: "{localappdata}\NEREA\dumps"
 
 [Messages]
 WelcomeLabel2=This will install NEREA on your computer.%n%nA living aquatic world that breathes with your music.
