@@ -214,7 +214,7 @@ public partial class LibraryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenPlaylist(Playlist? playlist)
+    public void OpenPlaylist(Playlist? playlist)
     {
         if (playlist is null) return;
         _openPlaylist = playlist;
@@ -310,6 +310,9 @@ public partial class LibraryViewModel : ObservableObject
         _playlists.RemoveTrack(_openPlaylist.Id, track.Id);
         OpenPlaylist(_openPlaylist);
     }
+
+    /// <summary>Closes every overlay panel; safe entry point for shell views.</summary>
+    public void ClosePanelsPublic() => _main.ClosePanelsPublic();
 
     // ── Import ───────────────────────────────────────────────────────────────
 

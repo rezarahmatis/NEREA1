@@ -134,7 +134,7 @@ public partial class MainViewModel : ObservableObject
             s.SessionQueueIndex = _playback.QueueIndex;
             s.SessionPositionSeconds = _playback.Position.TotalSeconds;
             s.SessionWasPlaying = _playback.IsPlaying;
-            s.Volume = Volume;
+            s.Volume = (float)Volume;
             s.Muted = IsMuted;
         });
     }
@@ -276,21 +276,21 @@ public partial class MainViewModel : ObservableObject
     public void Previous() => _playback.Previous();
 
     [RelayCommand]
-    private void ToggleShuffle()
+    public void ToggleShuffle()
     {
         IsShuffle = !IsShuffle;
         _playback.Shuffle = IsShuffle;
     }
 
     [RelayCommand]
-    private void CycleRepeat()
+    public void CycleRepeat()
     {
         RepeatIndex = (RepeatIndex + 1) % 3;
         _playback.Repeat = (RepeatMode)RepeatIndex;
     }
 
     [RelayCommand]
-    private void ToggleMute()
+    public void ToggleMute()
     {
         IsMuted = !IsMuted;
         _playback.SetMuted(IsMuted);
@@ -310,7 +310,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     private void PersistVolume() =>
-        _settings.Update(s => { s.Volume = Volume; s.Muted = IsMuted; });
+        _settings.Update(s => { s.Volume = (float)Volume; s.Muted = IsMuted; });
 
     public void SeekFraction(double fraction)
     {
@@ -346,7 +346,7 @@ public partial class MainViewModel : ObservableObject
     partial void OnShowSettingsChanged(bool value) { UpdateAnyPanel(); if (value) SettingsVm.LoadFromSettings(); }
 
     [RelayCommand]
-    private void OpenLibrary() { CloseAllPanels(); ShowLibrary = true; }
+    public void OpenLibrary() { CloseAllPanels(); ShowLibrary = true; }
 
     [RelayCommand]
     private void OpenAquarium() { CloseAllPanels(); ShowAquarium = true; }
@@ -355,15 +355,15 @@ public partial class MainViewModel : ObservableObject
     private void OpenSettings() { CloseAllPanels(); ShowSettings = true; }
 
     [RelayCommand]
-    private void ClosePanels() { CloseAllPanels(); }
+    public void ClosePanels() { CloseAllPanels(); }
 
     public void ClosePanelsPublic() => CloseAllPanels();
 
     [RelayCommand]
-    private void ToggleCinematic() => Cinematic = !Cinematic;
+    public void ToggleCinematic() => Cinematic = !Cinematic;
 
     [RelayCommand]
-    private void EnterAmbient()
+    public void EnterAmbient()
     {
         Ambient = true;
         CloseAllPanels();
@@ -372,7 +372,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ExitAmbient()
+    public void ExitAmbient()
     {
         Ambient = false;
         _engine.SetAmbient(false);
