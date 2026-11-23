@@ -20,6 +20,8 @@ AppCopyright=Copyright (c) NEREA contributors. MIT licensed.
 DefaultDirName={autopf}\NEREA
 DefaultGroupName=NEREA
 DisableProgramGroupPage=yes
+; Must match the workflow's "Upload installer" path: artifacts/NEREA-Setup.exe
+OutputBaseFilename=NEREA-Setup
 UninstallDisplayIcon={app}\NEREA.exe
 SetupIconFile=..\src\NEREA.App\Assets\NEREA.ico
 WizardStyle=modern
