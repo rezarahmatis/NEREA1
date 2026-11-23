@@ -145,8 +145,7 @@ public sealed class SystemMediaControlsService : IDisposable
             var timeline = new SystemMediaTransportControlsTimelineProperties
             {
                 Position = _playback.Position,
-                EndTime = _playback.Duration,
-                PlaybackRate = 1.0
+                EndTime = _playback.Duration
             };
             c.UpdateTimelineProperties(timeline);
         }
