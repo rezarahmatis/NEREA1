@@ -4,13 +4,14 @@ using System.Runtime.InteropServices;
 namespace NEREA.App;
 
 /// <summary>
-/// Custom entry point. The WinUI markup compiler generates its own Main only
-/// when the project defines none, so this one is the single entry point.
-/// It exists so that every early failure - missing runtime file, bootstrap
-/// error, XAML resource load error, DI construction failure - is written to
-/// a log and shown to the user instead of closing NEREA silently.
+/// Custom entry point. The XAML compiler emits a partial Program class in
+/// App.g.i.cs; with DISABLE_XAML_GENERATED_MAIN defined (see csproj) its Main
+/// is excluded and this partial part supplies the real entry point so that
+/// every early failure - missing runtime file, bootstrap error, XAML resource
+/// load error, DI construction failure - is written to a log and shown to the
+/// user instead of closing NEREA silently.
 /// </summary>
-internal static class Program
+internal static partial class Program
 {
     internal static readonly string LogDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

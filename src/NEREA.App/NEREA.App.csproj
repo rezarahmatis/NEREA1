@@ -20,6 +20,9 @@
     <ApplicationIcon>Assets\NEREA.ico</ApplicationIcon>
     <WindowsSdkPackageVersion>10.0.19041.56</WindowsSdkPackageVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- NEREA defines its own Main in Program.cs (startup logging + fatal error
+         dialog). This define removes the XAML compiler's generated Main. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 
     <!-- NEREA product metadata -->
     <AssemblyTitle>NEREA</AssemblyTitle>
