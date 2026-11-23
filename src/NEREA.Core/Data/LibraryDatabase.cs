@@ -8,65 +8,105 @@ namespace NEREA.Core.Data;
 /// <summary>
 /// SQLite-backed music library storage. All access is serialized through a
 /// single connection; the database lives in the local application data folder.
+/// A corrupt or unreadable database is quarantined and recreated instead of
+/// blocking startup.
 /// </summary>
 public sealed class LibraryDatabase : IDisposable
 {
-    private readonly SqliteConnection _connection;
+    private SqliteConnection _connection;
     private readonly object _sync = new();
 
     public LibraryDatabase(string databasePath)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
-        _connection = new SqliteConnection($"Data Source={databasePath}");
-        _connection.Open();
-        Initialize();
+        try
+        {
+            _connection = OpenAndInitialize(databasePath);
+        }
+        catch (SqliteException)
+        {
+            // Corrupt, locked or unreadable database: never block startup.
+            // Quarantine the old file and start with a fresh library.
+            QuarantineDatabase(databasePath);
+            _connection = OpenAndInitialize(databasePath);
+        }
     }
 
-    private void Initialize()
+    private static SqliteConnection OpenAndInitialize(string databasePath)
     {
-        lock (_sync)
+        var connection = new SqliteConnection($"Data Source={databasePath}");
+        connection.Open();
+        try
         {
-            using var cmd = _connection.CreateCommand();
-            cmd.CommandText = """
-                CREATE TABLE IF NOT EXISTS songs (
-                    id TEXT PRIMARY KEY,
-                    path TEXT UNIQUE NOT NULL,
-                    title TEXT NOT NULL,
-                    artist TEXT NOT NULL DEFAULT '',
-                    album TEXT NOT NULL DEFAULT '',
-                    album_artist TEXT NOT NULL DEFAULT '',
-                    genre TEXT NOT NULL DEFAULT '',
-                    track_number INTEGER NOT NULL DEFAULT 0,
-                    year INTEGER NOT NULL DEFAULT 0,
-                    duration_seconds REAL NOT NULL DEFAULT 0,
-                    file_size INTEGER NOT NULL DEFAULT 0,
-                    artwork_path TEXT NOT NULL DEFAULT '',
-                    favorite INTEGER NOT NULL DEFAULT 0,
-                    play_count INTEGER NOT NULL DEFAULT 0,
-                    last_played_utc TEXT,
-                    added_utc TEXT,
-                    mtime_utc TEXT
-                );
-                CREATE INDEX IF NOT EXISTS idx_songs_title ON songs(title);
-                CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist);
-                CREATE INDEX IF NOT EXISTS idx_songs_album ON songs(album);
-                CREATE TABLE IF NOT EXISTS playlists (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    created_utc TEXT
-                );
-                CREATE TABLE IF NOT EXISTS playlist_items (
-                    playlist_id TEXT NOT NULL,
-                    track_id TEXT NOT NULL,
-                    position INTEGER NOT NULL,
-                    PRIMARY KEY (playlist_id, position)
-                );
-                CREATE TABLE IF NOT EXISTS folders (
-                    path TEXT PRIMARY KEY,
-                    added_utc TEXT
-                );
-                """;
-            cmd.ExecuteNonQuery();
+            Initialize(connection);
+        }
+        catch
+        {
+            connection.Dispose();
+            throw;
+        }
+        return connection;
+    }
+
+    private static void Initialize(SqliteConnection connection)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            CREATE TABLE IF NOT EXISTS songs (
+                id TEXT PRIMARY KEY,
+                path TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                artist TEXT NOT NULL DEFAULT '',
+                album TEXT NOT NULL DEFAULT '',
+                album_artist TEXT NOT NULL DEFAULT '',
+                genre TEXT NOT NULL DEFAULT '',
+                track_number INTEGER NOT NULL DEFAULT 0,
+                year INTEGER NOT NULL DEFAULT 0,
+                duration_seconds REAL NOT NULL DEFAULT 0,
+                file_size INTEGER NOT NULL DEFAULT 0,
+                artwork_path TEXT NOT NULL DEFAULT '',
+                favorite INTEGER NOT NULL DEFAULT 0,
+                play_count INTEGER NOT NULL DEFAULT 0,
+                last_played_utc TEXT,
+                added_utc TEXT,
+                mtime_utc TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_songs_title ON songs(title);
+            CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist);
+            CREATE INDEX IF NOT EXISTS idx_songs_album ON songs(album);
+            CREATE TABLE IF NOT EXISTS playlists (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                created_utc TEXT
+            );
+            CREATE TABLE IF NOT EXISTS playlist_items (
+                playlist_id TEXT NOT NULL,
+                track_id TEXT NOT NULL,
+                position INTEGER NOT NULL,
+                PRIMARY KEY (playlist_id, position)
+            );
+            CREATE TABLE IF NOT EXISTS folders (
+                path TEXT PRIMARY KEY,
+                added_utc TEXT
+            );
+            """;
+        cmd.ExecuteNonQuery();
+    }
+
+    private static void QuarantineDatabase(string databasePath)
+    {
+        try
+        {
+            var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            if (File.Exists(databasePath))
+                File.Move(databasePath, $"{databasePath}.corrupt-{stamp}.bak");
+            foreach (var suffix in new[] { "-wal", "-shm" })
+                if (File.Exists(databasePath + suffix))
+                    File.Move(databasePath + suffix, $"{databasePath}{suffix}.corrupt-{stamp}.bak");
+        }
+        catch
+        {
+            // If the quarantine fails, the original error surfaces on retry.
         }
     }
 

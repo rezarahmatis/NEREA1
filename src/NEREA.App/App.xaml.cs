@@ -23,14 +23,30 @@ public partial class App : Application
         InitializeComponent();
         Directory.CreateDirectory(DataDirectory);
         Directory.CreateDirectory(Path.Combine(DataDirectory, "logs"));
+        Program.WriteLog("App constructor complete (XAML resources loaded).");
         UnhandledException += OnUnhandledException;
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        Services = BuildServices();
-        _window = Services.GetRequiredService<MainWindow>();
-        _window.Activate();
+        // Any failure here used to close the app silently. It is now logged
+        // and shown to the user so a broken install is always diagnosable.
+        try
+        {
+            Program.WriteLog("OnLaunched: building services...");
+            Services = BuildServices();
+            Program.WriteLog("OnLaunched: creating main window...");
+            _window = Services.GetRequiredService<MainWindow>();
+            Program.WriteLog("OnLaunched: activating main window...");
+            _window.Activate();
+            Program.WriteLog("OnLaunched: main window activated. NEREA is running.");
+        }
+        catch (Exception ex)
+        {
+            Program.WriteCrash("OnLaunched", ex);
+            Program.ShowFatal(ex);
+            Environment.Exit(1);
+        }
     }
 
     private static IServiceProvider BuildServices()
