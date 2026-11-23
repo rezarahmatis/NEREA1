@@ -1,0 +1,7 @@
+# Keeps the artifacts/ directory present in the CI workspace.
+#
+# The "Package portable ZIP" workflow step writes
+#   Compress-Archive -DestinationPath <workspace>\artifacts\NEREA-win-x64.zip
+# and PowerShell's Compress-Archive does NOT create missing parent
+# directories. Checking this file in materializes artifacts/ at checkout so
+# the ZIP (and the Inno Setup installer output) have a destination.
