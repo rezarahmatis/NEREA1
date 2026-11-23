@@ -23,7 +23,7 @@ public static class SwapChainPanelNative
 
         var vtbl = Marshal.ReadIntPtr(panelAbi);
         var setSwapChain = Marshal.GetDelegateForFunctionPointer<SetSwapChainDelegate>(
-            Marshal.ReadIntPtr(vtbl, 6 * sizeof(IntPtr)));
+            Marshal.ReadIntPtr(vtbl, 6 * IntPtr.Size));
         var hr = setSwapChain(panelAbi, swapChain);
         if (hr < 0) Marshal.ThrowExceptionForHR(hr);
     }
