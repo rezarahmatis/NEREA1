@@ -64,27 +64,22 @@
 
   <!-- CI-only post-publish verification. Runs on GitHub Actions (where
        GITHUB_ACTIONS=true) right after Publish, so a publish output that
-       cannot start fails the build instead of reaching the user. -->
+       cannot start fails the build instead of reaching the user. All logic
+       lives in .github/scripts/*.ps1 because inline pwsh -Command payloads
+       get their outer quotes stripped by cmd.exe (MSBuild Exec runs through
+       cmd.exe /c "..."), turning the one-liners into parse errors. -->
   <Target Name="NEREAVerifyRuntimeFiles" AfterTargets="Publish" Condition="'$(GITHUB_ACTIONS)' == 'true'">
     <PropertyGroup>
       <NEREAPublishExe>$([System.IO.Path]::Combine('$(PublishDir)', 'NEREA.exe'))</NEREAPublishExe>
     </PropertyGroup>
-    <Error Condition="!Exists('$(NEREAPublishExe)')" Text="NEREA.exe missing from publish output: $(NEREAPublishExe)" />
-    <!-- Files that must sit next to NEREA.exe or the process dies before any
-         managed diagnostics can run (the silent "installed but won't run"). -->
-    <Exec Command="pwsh -NoProfile -Command &quot;$req = 'Microsoft.ui.xaml.dll','Microsoft.WindowsAppRuntime.Bootstrap.dll','Microsoft.WindowsAppRuntime.dll','coreclr.dll','clrjit.dll','hostfxr.dll','NEREA.dll'; $miss = @($req | Where-Object { -not (Test-Path (Join-Path '$(PublishDir)' $_)) }); if ($miss.Count -gt 0) { Write-Host ('::error::Missing required runtime files: ' + ($miss -join ', ')); exit 1 } else { Write-Host 'All required runtime files present next to NEREA.exe.' }&quot;" />
-    <Message Importance="high" Text="NEREA publish output (top-level files):" />
-    <Exec Command="pwsh -NoProfile -Command &quot;Get-ChildItem -LiteralPath '$(PublishDir)' -File | Sort-Object Name | ForEach-Object { Write-Host ('  {0}  {1:N0} bytes' -f $_.Name, $_.Length) }&quot;" />
-    <Exec Command="pwsh -NoProfile -Command &quot;$pri = @(Get-ChildItem -LiteralPath '$(PublishDir)' -Filter '*.pri' -Recurse); if ($pri.Count -gt 0) { Write-Host ('Resource indexes: ' + (($pri | ForEach-Object { $_.Name }) -join ', ')) } else { Write-Host '::warning::No .pri resource index found in publish output - XAML resources may be missing.' }&quot;" />
-    <Copy SourceFiles="$(NEREARepoRoot).github\NEREA-portable-readme.txt" DestinationFiles="$(PublishDir)README.txt" SkipUnchangedFiles="true" />
-    <Message Importance="high" Text="Copied Persian README.txt into the publish output." />
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\verify-publish-output.ps1&quot; -PublishExe &quot;$(NEREAPublishExe)&quot;" />
   </Target>
 
   <!-- Launch the published exe on the CI runner. If NEREA cannot start, this
-       fails the build with the crash log + event log output instead of
+       fails the build with crash-log/event-log annotations instead of
        shipping a broken installer/zip to the user. -->
   <Target Name="NEREASmokeTestPublishedApp" AfterTargets="NEREAVerifyRuntimeFiles" Condition="'$(GITHUB_ACTIONS)' == 'true'">
-    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\smoke-test-app.ps1&quot; -ExePath &quot;$(NEREAPublishExe)&quot; -WaitSeconds 15" LogStandardErrorsAsErrors="true" />
+    <Exec Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(NEREARepoRoot).github\scripts\smoke-test-app.ps1&quot; -ExePath &quot;$(NEREAPublishExe)&quot; -WaitSeconds 15" />
   </Target>
 
 </Project>
