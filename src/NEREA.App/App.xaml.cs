@@ -66,6 +66,13 @@ public partial class App : Application
 
         services.AddSingleton<EngineHost>();
         services.AddSingleton<SystemMediaControlsService>();
+        // WindowHookService takes its nested MainViewModelProxy bridge in the
+        // constructor, but the nested type itself was never registered. The
+        // container therefore threw "Unable to resolve service for type
+        // 'WindowHookService+MainViewModelProxy'" while resolving MainWindow
+        // and the app crashed before the window appeared. The proxy is a
+        // stateless bridge, so a plain singleton registration is enough.
+        services.AddSingleton<WindowHookService.MainViewModelProxy>();
         services.AddSingleton<WindowHookService>();
         services.AddSingleton<AutostartService>();
 
