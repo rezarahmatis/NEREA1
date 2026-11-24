@@ -78,6 +78,16 @@ public partial class MainViewModel : ObservableObject
         AquariumVm = aquariumVm;
         SettingsVm = settingsVm;
 
+        // MainViewModel depends on the three child view models, so none of
+        // them may take MainViewModel in their constructors: that circular
+        // dependency threw InvalidOperationException while the service
+        // provider was resolving MainWindow and crashed the app before the
+        // window could appear. The shell is attached here instead - all view
+        // models are singletons and this runs before any UI can interact.
+        libraryVm.AttachMain(this);
+        aquariumVm.AttachMain(this);
+        settingsVm.AttachMain(this);
+
         _playback.TrackChanged += OnTrackChanged;
         _playback.PlayingChanged += OnPlayingChanged;
         _engine.FirstFrame += OnEngineFirstFrame;

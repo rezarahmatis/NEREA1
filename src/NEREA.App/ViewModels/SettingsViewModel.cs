@@ -20,7 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IMusicPlayer _player;
     private readonly EngineHost _engine;
     private readonly AutostartService _autostart;
-    private readonly MainViewModel _main;
+    private MainViewModel? _main;
 
     private bool _loading;
 
@@ -62,18 +62,24 @@ public partial class SettingsViewModel : ObservableObject
 
     public string AppVersion { get; } = "1.0.0";
 
-    public MainViewModel AppMain => _main;
+    public MainViewModel? AppMain => _main;
 
     public SettingsViewModel(SettingsStore store, IMusicPlayer player, EngineHost engine,
-        AutostartService autostart, MainViewModel main)
+        AutostartService autostart)
     {
         _store = store;
         _player = player;
         _engine = engine;
         _autostart = autostart;
-        _main = main;
         LoadDevices();
     }
+
+    /// <summary>
+    /// Attached by MainViewModel after construction; taking MainViewModel in
+    /// the constructor created a circular dependency that crashed the app at
+    /// startup.
+    /// </summary>
+    public void AttachMain(MainViewModel main) => _main = main;
 
     public void LoadFromSettings()
     {
@@ -191,26 +197,28 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     public void RescanLibrary()
     {
-        _main.BusyImporting = true;
+        var main = _main;
+        if (main is null) return;
+        main.BusyImporting = true;
         Task.Run(() =>
         {
             try
             {
                 var progress = new Progress<ImportProgress>(p =>
                 {
-                    _main.ShowInfo($"Rescanning library… {p.Processed}/{p.Total}");
+                    main.ShowInfo($"Rescanning library… {p.Processed}/{p.Total}");
                 });
                 var library = App.Services.GetRequiredService<MusicLibraryService>();
                 library.RescanFolders(progress);
-                _main.ShowInfo("Library rescan complete.");
+                main.ShowInfo("Library rescan complete.");
             }
             catch (Exception ex)
             {
-                _main.ShowInfo($"Rescan failed: {ex.Message}", true);
+                main.ShowInfo($"Rescan failed: {ex.Message}", true);
             }
             finally
             {
-                _main.BusyImporting = false;
+                main.BusyImporting = false;
             }
         });
     }

@@ -26,7 +26,7 @@ public partial class LibraryViewModel : ObservableObject
     private readonly MusicLibraryService _library;
     private readonly PlaylistService _playlists;
     private readonly PlaybackController _playback;
-    private readonly MainViewModel _main;
+    private MainViewModel? _main;
 
     private List<Track> _allTracks = new();
     private List<Playlist> _allPlaylists = new();
@@ -56,12 +56,11 @@ public partial class LibraryViewModel : ObservableObject
     private Playlist? _openPlaylist;
 
     public LibraryViewModel(MusicLibraryService library, PlaylistService playlists,
-        PlaybackController playback, MainViewModel main)
+        PlaybackController playback)
     {
         _library = library;
         _playlists = playlists;
         _playback = playback;
-        _main = main;
 
         _playback.QueueChanged += (_, _) => RefreshQueue();
         _sync = System.Threading.SynchronizationContext.Current;
@@ -69,6 +68,14 @@ public partial class LibraryViewModel : ObservableObject
     }
 
     private readonly System.Threading.SynchronizationContext? _sync;
+
+    /// <summary>
+    /// Attached by MainViewModel after construction. MainViewModel depends on
+    /// this view model, so taking it in the constructor created a circular
+    /// dependency that threw while building services and crashed the app at
+    /// startup.
+    /// </summary>
+    public void AttachMain(MainViewModel main) => _main = main;
 
     public void RefreshAll()
     {
@@ -312,15 +319,16 @@ public partial class LibraryViewModel : ObservableObject
     }
 
     /// <summary>Closes every overlay panel; safe entry point for shell views.</summary>
-    public void ClosePanelsPublic() => _main.ClosePanelsPublic();
+    public void ClosePanelsPublic() => _main?.ClosePanelsPublic();
 
     // ── Import ───────────────────────────────────────────────────────────────
 
     public async Task ImportAsync(IEnumerable<string> paths)
     {
-        _main.BusyImporting = true;
+        if (_main is not null) _main.BusyImporting = true;
         var progress = new Progress<ImportProgress>(p =>
         {
+            if (_main is null) return;
             _main.InfoMessage = $"Importing music… {p.Processed}/{p.Total}";
             _main.InfoOpen = true;
         });
@@ -328,15 +336,15 @@ public partial class LibraryViewModel : ObservableObject
         {
             await _library.ImportAsync(paths, progress);
             RefreshAll();
-            _main.ShowInfo("Import complete. The library is ready.");
+            _main?.ShowInfo("Import complete. The library is ready.");
         }
         catch (Exception ex)
         {
-            _main.ShowInfo($"Import failed: {ex.Message}", true);
+            _main?.ShowInfo($"Import failed: {ex.Message}", true);
         }
         finally
         {
-            _main.BusyImporting = false;
+            if (_main is not null) _main.BusyImporting = false;
         }
     }
 }

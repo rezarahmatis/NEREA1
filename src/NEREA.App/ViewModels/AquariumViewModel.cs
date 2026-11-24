@@ -33,7 +33,7 @@ public partial class AquariumViewModel : ObservableObject
 {
     private readonly AquariumService _aquarium;
     private readonly EngineHost _engine;
-    private readonly MainViewModel _main;
+    private MainViewModel? _main;
 
     [ObservableProperty] private ObservableCollection<WorldDefinition> _worlds = new(WorldCatalog.All);
     [ObservableProperty] private WorldDefinition? _selectedWorld;
@@ -47,14 +47,20 @@ public partial class AquariumViewModel : ObservableObject
 
     public IReadOnlyList<string> Atmospheres { get; } = new[] { "Calm", "Balanced", "Vivid" };
 
-    public AquariumViewModel(AquariumService aquarium, EngineHost engine, MainViewModel main)
+    public AquariumViewModel(AquariumService aquarium, EngineHost engine)
     {
         _aquarium = aquarium;
         _engine = engine;
-        _main = main;
-        _aquarium.ConfigurationChanged += (_, _) => _main.SyncUi(ReloadFromService);
+        _aquarium.ConfigurationChanged += (_, _) => _main?.SyncUi(ReloadFromService);
         ReloadFromService();
     }
+
+    /// <summary>
+    /// Attached by MainViewModel after construction; taking MainViewModel in
+    /// the constructor created a circular dependency that crashed the app at
+    /// startup.
+    /// </summary>
+    public void AttachMain(MainViewModel main) => _main = main;
 
     public void ReloadFromService()
     {
@@ -174,7 +180,7 @@ public partial class AquariumViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(name)) return;
         _aquarium.SavePreset(_aquarium.SnapshotAsPreset(name.Trim()));
         Presets = new ObservableCollection<AquariumPreset>(_aquarium.Saved);
-        _main.ShowInfo($"Saved aquarium “{name.Trim()}”.");
+        _main?.ShowInfo($"Saved aquarium “{name.Trim()}”.");
     }
 
     [RelayCommand]
